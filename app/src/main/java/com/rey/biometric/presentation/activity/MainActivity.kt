@@ -1,4 +1,4 @@
-package com.rey.biometric.presentation
+package com.rey.biometric.presentation.activity
 
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
