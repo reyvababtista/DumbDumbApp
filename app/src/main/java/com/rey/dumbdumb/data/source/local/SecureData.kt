@@ -5,6 +5,9 @@ import android.security.keystore.KeyGenParameterSpec
 import android.security.keystore.KeyProperties
 import androidx.annotation.RequiresApi
 import com.rey.dumbdumb.data.repository.source.local.ISecureData
+import com.rey.lib.cleanarch.domain.dto.Result
+import com.rey.lib.cleanarch.domain.dto.suspendTryCatch
+import com.rey.lib.cleanarch.domain.dto.tryCatch
 import java.security.KeyStore
 import javax.crypto.Cipher
 import javax.crypto.KeyGenerator
@@ -18,20 +21,22 @@ internal class SecureData : ISecureData {
         keyGenerator.generateKey()
     }
 
-    override fun getSecretKey(): SecretKey {
+    override fun getSecretKey(): Result<SecretKey> = tryCatch {
         val keyStore = KeyStore.getInstance(KEY_PROVIDER)
 
         // Before the keystore can be accessed, it must be loaded.
         keyStore.load(null)
-        return keyStore.getKey(KEY_ALIAS, null) as SecretKey
+        val secretKey = keyStore.getKey(KEY_ALIAS, null) as SecretKey
+        Result.Success(secretKey)
     }
 
-    override fun getCipher(): Cipher {
-        return Cipher.getInstance(
+    override suspend fun getCipher(): Result<Cipher> = suspendTryCatch {
+        val cipher = Cipher.getInstance(
             KeyProperties.KEY_ALGORITHM_AES + "/"
                     + KeyProperties.BLOCK_MODE_CBC + "/"
                     + KeyProperties.ENCRYPTION_PADDING_PKCS7
         )
+        Result.Success(cipher)
     }
 
     @RequiresApi(Build.VERSION_CODES.N)
