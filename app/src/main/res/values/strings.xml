@@ -1,3 +1,5 @@
 <resources>
     <string name="app_name">Dumb Dumb</string>
+    <string name="login">Login</string>
+    <string name="logged_in">Logged in!</string>
 </resources>

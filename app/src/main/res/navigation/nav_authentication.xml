@@ -9,9 +9,9 @@
         android:id="@+id/authenticationFragment"
         android:name="com.rey.dumbdumb.presentation.fragment.AuthenticationFragment"
         android:label="fragment_authentication"
-        tools:layout="@layout/fragment_authentication" >
+        tools:layout="@layout/fragment_authentication">
         <action
-            android:id="@+id/action_authenticationFragment_to_nav_home2"
+            android:id="@+id/action_authenticationFragment_to_nav_home"
             app:destination="@id/nav_home" />
     </fragment>
     <include app:graph="@navigation/nav_home" />

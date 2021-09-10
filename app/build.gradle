@@ -2,6 +2,7 @@ plugins {
     id 'com.android.application'
     id 'kotlin-android'
     id 'kotlin-kapt'
+    id 'androidx.navigation.safeargs.kotlin'
 }
 
 android {
@@ -32,6 +33,7 @@ android {
         jvmTarget = '1.8'
     }
     buildFeatures {
+        viewBinding true
         dataBinding true
     }
 }
@@ -43,8 +45,8 @@ dependencies {
     api "androidx.navigation:navigation-fragment-ktx:$nav_version"
     api "androidx.navigation:navigation-ui-ktx:$nav_version"
     api "androidx.navigation:navigation-dynamic-features-fragment:$nav_version"
-    implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
-    implementation 'androidx.legacy:legacy-support-v4:1.0.0'
-    implementation 'com.google.android.material:material:1.4.0'
+    api 'androidx.legacy:legacy-support-v4:1.0.0'
+    api 'com.google.android.material:material:1.4.0'
+    implementation "androidx.biometric:biometric-ktx:1.2.0-alpha03"
     androidTestImplementation "androidx.navigation:navigation-testing:$nav_version"
 }
