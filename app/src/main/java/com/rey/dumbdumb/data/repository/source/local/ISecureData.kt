@@ -5,7 +5,7 @@ import javax.crypto.Cipher
 import javax.crypto.SecretKey
 
 internal interface ISecureData {
-    suspend fun generateSecretKey()
-    fun getSecretKey(): Result<SecretKey>
+    suspend fun generateSecretKey(keyProvider: String, alias: String)
+    fun getSecretKey(keyProvider: String, alias: String): Result<SecretKey>
     suspend fun getCipher(): Result<Cipher>
 }

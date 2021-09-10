@@ -12,21 +12,22 @@ import java.security.KeyStore
 import javax.crypto.Cipher
 import javax.crypto.KeyGenerator
 import javax.crypto.SecretKey
+import javax.inject.Inject
 
 @RequiresApi(Build.VERSION_CODES.M)
-internal class SecureData : ISecureData {
-    private fun generateSecretKey(keyGenParameterSpec: KeyGenParameterSpec) {
-        val keyGenerator = KeyGenerator.getInstance(KEY_PROVIDER)
+internal class SecureData @Inject constructor() : ISecureData {
+    private fun generateSecretKey(keyGenParameterSpec: KeyGenParameterSpec, keyProvider: String) {
+        val keyGenerator = KeyGenerator.getInstance(keyProvider)
         keyGenerator.init(keyGenParameterSpec)
         keyGenerator.generateKey()
     }
 
-    override fun getSecretKey(): Result<SecretKey> = tryCatch {
-        val keyStore = KeyStore.getInstance(KEY_PROVIDER)
+    override fun getSecretKey(keyProvider: String, alias: String): Result<SecretKey> = tryCatch {
+        val keyStore = KeyStore.getInstance(keyProvider)
 
         // Before the keystore can be accessed, it must be loaded.
         keyStore.load(null)
-        val secretKey = keyStore.getKey(KEY_ALIAS, null) as SecretKey
+        val secretKey = keyStore.getKey(alias, null) as SecretKey
         Result.Success(secretKey)
     }
 
@@ -40,9 +41,9 @@ internal class SecureData : ISecureData {
     }
 
     @RequiresApi(Build.VERSION_CODES.N)
-    override suspend fun generateSecretKey() {
+    override suspend fun generateSecretKey(keyProvider: String, alias: String) {
         val keyGenParamSpec = KeyGenParameterSpec.Builder(
-            KEY_ALIAS,
+            alias,
             KeyProperties.PURPOSE_ENCRYPT or KeyProperties.PURPOSE_DECRYPT
         )
             .setBlockModes(KeyProperties.BLOCK_MODE_CBC)
@@ -51,11 +52,6 @@ internal class SecureData : ISecureData {
             .setInvalidatedByBiometricEnrollment(true)
             .build()
 
-        generateSecretKey(keyGenParamSpec)
-    }
-
-    companion object {
-        private const val KEY_PROVIDER = "AndroidKeyStore"
-        private const val KEY_ALIAS = "Foo"
+        generateSecretKey(keyGenParamSpec, keyProvider)
     }
 }
