@@ -18,7 +18,7 @@ internal class SecureData : ISecureData {
         keyGenerator.generateKey()
     }
 
-    private fun getSecretKey(): SecretKey {
+    override fun getSecretKey(): SecretKey {
         val keyStore = KeyStore.getInstance(KEY_PROVIDER)
 
         // Before the keystore can be accessed, it must be loaded.
@@ -26,7 +26,7 @@ internal class SecureData : ISecureData {
         return keyStore.getKey(KEY_ALIAS, null) as SecretKey
     }
 
-    private fun getCipher(): Cipher {
+    override fun getCipher(): Cipher {
         return Cipher.getInstance(
             KeyProperties.KEY_ALGORITHM_AES + "/"
                     + KeyProperties.BLOCK_MODE_CBC + "/"
