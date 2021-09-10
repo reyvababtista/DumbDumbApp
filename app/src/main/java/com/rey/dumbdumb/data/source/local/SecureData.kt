@@ -41,17 +41,18 @@ internal class SecureData @Inject constructor() : ISecureData {
     }
 
     @RequiresApi(Build.VERSION_CODES.N)
-    override suspend fun generateSecretKey(keyProvider: String, alias: String) {
-        val keyGenParamSpec = KeyGenParameterSpec.Builder(
-            alias,
-            KeyProperties.PURPOSE_ENCRYPT or KeyProperties.PURPOSE_DECRYPT
-        )
-            .setBlockModes(KeyProperties.BLOCK_MODE_CBC)
-            .setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_PKCS7)
-            .setUserAuthenticationRequired(true)
-            .setInvalidatedByBiometricEnrollment(true)
-            .build()
+    override suspend fun generateSecretKey(keyProvider: String, alias: String): Result<Unit> =
+        suspendTryCatch {
+            val keyGenParamSpec = KeyGenParameterSpec.Builder(
+                alias,
+                KeyProperties.PURPOSE_ENCRYPT or KeyProperties.PURPOSE_DECRYPT
+            )
+                .setBlockModes(KeyProperties.BLOCK_MODE_CBC)
+                .setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_PKCS7)
+                .setUserAuthenticationRequired(true)
+                .setInvalidatedByBiometricEnrollment(true)
+                .build()
 
-        generateSecretKey(keyGenParamSpec, keyProvider)
-    }
+            Result.Success(generateSecretKey(keyGenParamSpec, keyProvider))
+        }
 }

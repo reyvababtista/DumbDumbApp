@@ -10,12 +10,14 @@ import javax.crypto.SecretKey
 import javax.inject.Inject
 
 @RequiresApi(Build.VERSION_CODES.M)
-internal class SecureRepository @Inject constructor(private val secureData: SecureData) :
+internal class SecureRepository @Inject constructor(private val data: SecureData) :
     ISecureRepository {
     @RequiresApi(Build.VERSION_CODES.N)
-    override suspend fun generateSecretKey() = secureData.generateSecretKey()
+    override suspend fun generateSecretKey(keyProvider: String, alias: String): Result<Unit> =
+        data.generateSecretKey(keyProvider, alias)
 
-    override fun getSecretKey(): Result<SecretKey> = secureData.getSecretKey()
+    override fun getSecretKey(keyProvider: String, alias: String): Result<SecretKey> =
+        data.getSecretKey(keyProvider, alias)
 
-    override suspend fun getCipher(): Result<Cipher> = secureData.getCipher()
+    override suspend fun getCipher(): Result<Cipher> = data.getCipher()
 }

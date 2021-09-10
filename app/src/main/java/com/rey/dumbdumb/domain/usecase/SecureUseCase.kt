@@ -11,11 +11,18 @@ import javax.inject.Inject
 internal class SecureUseCase @Inject constructor(private val repository: ISecureRepository) :
     ISecureUseCase {
     override suspend fun generateCipher(): Result<Cipher> =
-        repository.getCipher().next { cipherResult ->
-            repository.getSecretKey().next { secretKeyResult ->
-                val cipher = cipherResult.data
-                cipher.init(Cipher.ENCRYPT_MODE, secretKeyResult.data)
-                Result.Success(cipher)
+        repository.generateSecretKey(KEY_PROVIDER, KEY_ALIAS).next {
+            repository.getCipher().next { cipherResult ->
+                repository.getSecretKey(KEY_PROVIDER, KEY_ALIAS).next { secretKeyResult ->
+                    val cipher = cipherResult.data
+                    cipher.init(Cipher.ENCRYPT_MODE, secretKeyResult.data)
+                    Result.Success(cipher)
+                }
             }
         }
+
+    companion object {
+        private const val KEY_PROVIDER = "DumbDumbKeyStore"
+        private const val KEY_ALIAS = "Biometric"
+    }
 }
