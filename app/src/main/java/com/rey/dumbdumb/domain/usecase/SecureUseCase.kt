@@ -22,7 +22,7 @@ internal class SecureUseCase @Inject constructor(private val repository: ISecure
         }
 
     companion object {
-        private const val KEY_PROVIDER = "DumbDumbKeyStore"
+        private const val KEY_PROVIDER = "AndroidKeyStore"
         private const val KEY_ALIAS = "Biometric"
     }
 }
