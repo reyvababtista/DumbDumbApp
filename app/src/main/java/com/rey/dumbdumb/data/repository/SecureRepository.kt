@@ -3,6 +3,7 @@ package com.rey.dumbdumb.data.repository
 import android.os.Build
 import androidx.annotation.RequiresApi
 import com.rey.dumbdumb.data.repository.source.local.ISecureData
+import com.rey.dumbdumb.domain.dto.EncryptRes
 import com.rey.dumbdumb.domain.usecase.repository.ISecureRepository
 import com.rey.lib.cleanarch.domain.dto.Result
 import com.rey.lib.cleanarch.domain.dto.data
@@ -40,6 +41,12 @@ internal class SecureRepository @Inject constructor(private val data: ISecureDat
         )
         cipherResult
     }
+
+    override suspend fun encrypt(plaintext: String, cipher: Cipher): Result<EncryptRes> =
+        data.encrypt(plaintext, cipher)
+
+    override suspend fun decrypt(ciphertext: ByteArray, cipher: Cipher): Result<String> =
+        data.decrypt(ciphertext, cipher)
 
     companion object {
         private const val KEY_STORE = "AndroidKeyStore"

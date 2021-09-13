@@ -1,4 +1,4 @@
-package com.rey.dumbdumb.data.repository.source.local.dto
+package com.rey.dumbdumb.domain.dto
 
 internal data class EncryptRes(
     val ciphertext: ByteArray,

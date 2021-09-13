@@ -5,7 +5,7 @@ import android.security.keystore.KeyGenParameterSpec
 import android.security.keystore.KeyProperties
 import androidx.annotation.RequiresApi
 import com.rey.dumbdumb.data.repository.source.local.ISecureData
-import com.rey.dumbdumb.data.repository.source.local.dto.EncryptRes
+import com.rey.dumbdumb.domain.dto.EncryptRes
 import com.rey.lib.cleanarch.domain.dto.Result
 import com.rey.lib.cleanarch.domain.dto.suspendTryCatch
 import com.rey.lib.cleanarch.domain.dto.tryCatch
