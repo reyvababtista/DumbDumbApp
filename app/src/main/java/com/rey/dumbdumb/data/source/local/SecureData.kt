@@ -16,16 +16,9 @@ import javax.inject.Inject
 
 @RequiresApi(Build.VERSION_CODES.M)
 internal class SecureData @Inject constructor() : ISecureData {
-    private fun generateSecretKey(keyGenParameterSpec: KeyGenParameterSpec, keyProvider: String) {
-        val keyGenerator = KeyGenerator.getInstance(keyProvider)
-        keyGenerator.init(keyGenParameterSpec)
-        keyGenerator.generateKey()
-    }
 
     override fun getSecretKey(keyProvider: String, alias: String): Result<SecretKey> = tryCatch {
         val keyStore = KeyStore.getInstance(keyProvider)
-
-        // Before the keystore can be accessed, it must be loaded.
         keyStore.load(null)
         val secretKey = keyStore.getKey(alias, null) as SecretKey
         Result.Success(secretKey)
@@ -53,6 +46,11 @@ internal class SecureData @Inject constructor() : ISecureData {
                 .setInvalidatedByBiometricEnrollment(true)
                 .build()
 
-            Result.Success(generateSecretKey(keyGenParamSpec, keyProvider))
+            KeyGenerator.getInstance(keyProvider).run {
+                init(keyGenParamSpec)
+                generateKey()
+            }
+
+            Result.Success(Unit)
         }
 }
