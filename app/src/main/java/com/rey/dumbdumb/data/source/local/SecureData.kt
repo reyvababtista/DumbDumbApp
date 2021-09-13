@@ -5,9 +5,11 @@ import android.security.keystore.KeyGenParameterSpec
 import android.security.keystore.KeyProperties
 import androidx.annotation.RequiresApi
 import com.rey.dumbdumb.data.repository.source.local.ISecureData
+import com.rey.dumbdumb.data.repository.source.local.dto.EncryptRes
 import com.rey.lib.cleanarch.domain.dto.Result
 import com.rey.lib.cleanarch.domain.dto.suspendTryCatch
 import com.rey.lib.cleanarch.domain.dto.tryCatch
+import java.nio.charset.Charset
 import java.security.KeyStore
 import javax.crypto.Cipher
 import javax.crypto.KeyGenerator
@@ -53,4 +55,20 @@ internal class SecureData @Inject constructor() : ISecureData {
 
             Result.Success(Unit)
         }
+
+    override suspend fun encrypt(plaintext: String, cipher: Cipher): Result<EncryptRes> =
+        suspendTryCatch {
+            val ciphertext = cipher.doFinal(plaintext.toByteArray(Charset.forName(UTF_8)))
+            Result.Success(EncryptRes(ciphertext, cipher.iv))
+        }
+
+    override suspend fun decrypt(ciphertext: ByteArray, cipher: Cipher): Result<String> =
+        suspendTryCatch {
+            val plaintext = cipher.doFinal(ciphertext)
+            Result.Success(String(plaintext, Charset.forName(UTF_8)))
+        }
+
+    companion object {
+        private const val UTF_8 = "UTF-8"
+    }
 }
