@@ -5,7 +5,7 @@ import javax.crypto.Cipher
 import javax.crypto.SecretKey
 
 internal interface ISecureRepository {
-    suspend fun getSecretKey(keyProvider: String, alias: String): Result<SecretKey>
+    suspend fun getSecretKey(alias: String): Result<SecretKey>
     suspend fun getEncryptionCipher(secretKey: SecretKey): Result<Cipher>
     suspend fun getDecryptionCipher(
         secretKey: SecretKey,

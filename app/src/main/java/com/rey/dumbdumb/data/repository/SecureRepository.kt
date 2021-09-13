@@ -16,10 +16,10 @@ import javax.inject.Inject
 internal class SecureRepository @Inject constructor(private val data: ISecureData) :
     ISecureRepository {
     @RequiresApi(Build.VERSION_CODES.N)
-    override suspend fun getSecretKey(keyProvider: String, alias: String): Result<SecretKey> =
-        data.getSecretKey(keyProvider, alias).nextOnError {
-            data.generateSecretKey(keyProvider, alias)
-                .next { data.getSecretKey(keyProvider, alias) }
+    override suspend fun getSecretKey(alias: String): Result<SecretKey> =
+        data.getSecretKey(KEY_STORE, alias).nextOnError {
+            data.generateSecretKey(KEY_STORE, alias)
+                .next { data.getSecretKey(KEY_STORE, alias) }
         }
 
     @RequiresApi(Build.VERSION_CODES.M)
@@ -39,5 +39,9 @@ internal class SecureRepository @Inject constructor(private val data: ISecureDat
             GCMParameterSpec(128, initializationVector)
         )
         cipherResult
+    }
+
+    companion object {
+        private const val KEY_STORE = "AndroidKeyStore"
     }
 }
