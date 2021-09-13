@@ -3,6 +3,7 @@
     package="com.rey.dumbdumb">
 
     <application
+        android:name=".DumbDumbApp"
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
@@ -10,7 +11,7 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.DumbDumb">
         <activity android:name=".presentation.activity.HomeActivity" />
-        <activity android:name=".presentation.activity.AuthenticationActivity" >
+        <activity android:name=".presentation.activity.AuthenticationActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />

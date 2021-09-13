@@ -1,5 +1,6 @@
 package com.rey.dumbdumb.presentation.fragment
 
+import android.content.Context
 import android.content.Intent
 import android.os.Build
 import android.os.Bundle
@@ -10,23 +11,45 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
 import androidx.biometric.BiometricManager
-import androidx.biometric.BiometricManager.Authenticators.*
+import androidx.biometric.BiometricManager.Authenticators.BIOMETRIC_STRONG
+import androidx.biometric.BiometricManager.Authenticators.DEVICE_CREDENTIAL
 import androidx.biometric.BiometricPrompt
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.activityViewModels
+import androidx.lifecycle.ViewModelProvider
 import androidx.navigation.fragment.findNavController
 import com.rey.dumbdumb.databinding.FragmentAuthenticationBinding
+import com.rey.dumbdumb.presentation.viewmodel.AuthenticationViewModel
+import dagger.android.support.AndroidSupportInjection
+import java.nio.charset.Charset
+import java.util.*
+import javax.inject.Inject
 
 class AuthenticationFragment : Fragment() {
+
+    companion object {
+        private val bitwiseAuthenticationCombination =
+            if (Build.VERSION.SDK_INT > Build.VERSION_CODES.Q) BIOMETRIC_STRONG or DEVICE_CREDENTIAL
+            else BIOMETRIC_STRONG
+    }
 
     private var _binding: FragmentAuthenticationBinding? = null
     private val binding: FragmentAuthenticationBinding get() = _binding!!
 
-    private val bitwiseAuthenticationCombination =
-        if (Build.VERSION.SDK_INT > Build.VERSION_CODES.Q) BIOMETRIC_STRONG or DEVICE_CREDENTIAL
-        else BIOMETRIC_STRONG or BIOMETRIC_WEAK
+    @Inject
+    lateinit var viewModelFactory: ViewModelProvider.Factory
+
+    private val viewModel: AuthenticationViewModel by activityViewModels {
+        viewModelFactory
+    }
     private lateinit var biometricPromptInfo: BiometricPrompt.PromptInfo
     private lateinit var biometricPrompt: BiometricPrompt
+
+    override fun onAttach(context: Context) {
+        AndroidSupportInjection.inject(this)
+        super.onAttach(context)
+    }
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -43,6 +66,17 @@ class AuthenticationFragment : Fragment() {
         initBiometric()
         initBiometricPromptInfo()
         initBiometricPrompt()
+        initObservers()
+    }
+
+    private fun initObservers() = with(viewLifecycleOwner) {
+        viewModel.cipher.observe(this) {
+            try {
+                biometricPrompt.authenticate(biometricPromptInfo, BiometricPrompt.CryptoObject(it))
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
     }
 
     private fun initBiometricPrompt() {
@@ -66,7 +100,20 @@ class AuthenticationFragment : Fragment() {
                         "Authentication succeeded!",
                         Toast.LENGTH_SHORT
                     ).show()
-                    findNavController().navigate(AuthenticationFragmentDirections.actionAuthenticationFragmentToNavHome())
+                    val encryptedInfo: ByteArray? =
+                        result.cryptoObject?.cipher?.doFinal("foo".toByteArray(Charset.defaultCharset()))
+                    if (encryptedInfo != null) {
+                        Log.d(
+                            "MY_APP_TAG",
+                            "Encrypted information: " + Arrays.toString(encryptedInfo)
+                        )
+                        Toast.makeText(
+                            requireContext(),
+                            Arrays.toString(encryptedInfo),
+                            Toast.LENGTH_SHORT
+                        ).show()
+                        findNavController().navigate(AuthenticationFragmentDirections.actionAuthenticationFragmentToNavHome())
+                    }
                 }
 
                 override fun onAuthenticationFailed() {
@@ -80,7 +127,7 @@ class AuthenticationFragment : Fragment() {
             })
 
         binding.buttonLogin.setOnClickListener {
-            biometricPrompt.authenticate(biometricPromptInfo)
+            viewModel.getChiper()
         }
     }
 
@@ -88,7 +135,7 @@ class AuthenticationFragment : Fragment() {
         biometricPromptInfo = BiometricPrompt.PromptInfo.Builder()
             .setTitle("Biometric Login")
             .setSubtitle("Subtitle")
-            .setNegativeButtonText("Noice")
+            .setNegativeButtonText("Cancel")
             .setAllowedAuthenticators(bitwiseAuthenticationCombination).build()
     }
 
@@ -113,6 +160,15 @@ class AuthenticationFragment : Fragment() {
                     }
                     startActivityForResult(enrollIntent, 1)
                 }
+            }
+            BiometricManager.BIOMETRIC_ERROR_SECURITY_UPDATE_REQUIRED -> {
+                Log.e("MY_APP_TAG", "BIOMETRIC_ERROR_SECURITY_UPDATE_REQUIRED")
+            }
+            BiometricManager.BIOMETRIC_ERROR_UNSUPPORTED -> {
+                Log.e("MY_APP_TAG", "BIOMETRIC_ERROR_UNSUPPORTED")
+            }
+            BiometricManager.BIOMETRIC_STATUS_UNKNOWN -> {
+                Log.d("MY_APP_TAG", "BIOMETRIC_STATUS_UNKNOWN")
             }
         }
     }
