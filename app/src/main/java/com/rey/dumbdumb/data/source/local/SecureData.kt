@@ -4,6 +4,7 @@ import android.os.Build
 import android.security.keystore.KeyGenParameterSpec
 import android.security.keystore.KeyProperties
 import androidx.annotation.RequiresApi
+import com.auth0.jwt.JWT
 import com.rey.dumbdumb.data.repository.source.local.ISecureData
 import com.rey.dumbdumb.domain.dto.EncryptRes
 import com.rey.lib.cleanarch.domain.dto.Result
@@ -17,20 +18,19 @@ import javax.crypto.SecretKey
 import javax.inject.Inject
 
 @RequiresApi(Build.VERSION_CODES.M)
-internal class SecureData @Inject constructor() : ISecureData {
+internal class SecureData @Inject constructor(private val jwt: JWT) : ISecureData {
 
     override fun getSecretKey(keyProvider: String, alias: String): Result<SecretKey> = tryCatch {
         val keyStore = KeyStore.getInstance(keyProvider)
         keyStore.load(null)
-        val secretKey = keyStore.getKey(alias, null) as SecretKey
+        val secretKey = keyStore.getKey(alias, null)?.let { it as SecretKey }
+            ?: throw NullPointerException("key not found")
         Result.Success(secretKey)
     }
 
     override suspend fun getCipher(): Result<Cipher> = suspendTryCatch {
         val cipher = Cipher.getInstance(
-            KeyProperties.KEY_ALGORITHM_AES + "/"
-                    + KeyProperties.BLOCK_MODE_CBC + "/"
-                    + KeyProperties.ENCRYPTION_PADDING_PKCS7
+            "$ENCRYPTION_ALGORITHM/$ENCRYPTION_BLOCK_MODE/$ENCRYPTION_PADDING"
         )
         Result.Success(cipher)
     }
@@ -42,16 +42,16 @@ internal class SecureData @Inject constructor() : ISecureData {
                 alias,
                 KeyProperties.PURPOSE_ENCRYPT or KeyProperties.PURPOSE_DECRYPT
             )
-                .setBlockModes(KeyProperties.BLOCK_MODE_CBC)
-                .setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_PKCS7)
+                .setBlockModes(ENCRYPTION_BLOCK_MODE)
+                .setEncryptionPaddings(ENCRYPTION_PADDING)
+                .setKeySize(KEY_SIZE)
                 .setUserAuthenticationRequired(true)
                 .setInvalidatedByBiometricEnrollment(true)
                 .build()
 
-            KeyGenerator.getInstance(keyProvider).run {
-                init(keyGenParamSpec)
-                generateKey()
-            }
+            val keyGenerator = KeyGenerator.getInstance(ENCRYPTION_ALGORITHM, keyProvider)
+            keyGenerator.init(keyGenParamSpec)
+            keyGenerator.generateKey()
 
             Result.Success(Unit)
         }
@@ -68,7 +68,16 @@ internal class SecureData @Inject constructor() : ISecureData {
             Result.Success(String(plaintext, Charset.forName(UTF_8)))
         }
 
+    override suspend fun decode(token: String): Result<String> = suspendTryCatch {
+        val data: String = jwt.decodeJwt(token).claims["name"].toString()
+        Result.Success(data)
+    }
+
     companion object {
         private const val UTF_8 = "UTF-8"
+        private const val KEY_SIZE = 256
+        private const val ENCRYPTION_BLOCK_MODE = KeyProperties.BLOCK_MODE_GCM
+        private const val ENCRYPTION_PADDING = KeyProperties.ENCRYPTION_PADDING_NONE
+        private const val ENCRYPTION_ALGORITHM = KeyProperties.KEY_ALGORITHM_AES
     }
 }

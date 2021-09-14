@@ -11,4 +11,5 @@ internal interface ISecureData {
     suspend fun getCipher(): Result<Cipher>
     suspend fun encrypt(plaintext: String, cipher: Cipher): Result<EncryptRes>
     suspend fun decrypt(ciphertext: ByteArray, cipher: Cipher): Result<String>
+    suspend fun decode(token: String): Result<String>
 }
