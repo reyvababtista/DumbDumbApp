@@ -6,6 +6,7 @@
 
     <androidx.appcompat.widget.AppCompatTextView
         android:layout_width="wrap_content"
+        android:id="@+id/text_home"
         android:layout_height="wrap_content"
         android:text="@string/logged_in"
         app:layout_constraintBottom_toBottomOf="parent"

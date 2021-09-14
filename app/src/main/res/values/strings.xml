@@ -2,4 +2,6 @@
     <string name="app_name">Dumb Dumb</string>
     <string name="login">Login</string>
     <string name="logged_in">Logged in!</string>
+    <string name="username">Username</string>
+    <string name="password">Password</string>
 </resources>

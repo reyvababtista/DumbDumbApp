@@ -12,7 +12,11 @@
         tools:layout="@layout/fragment_authentication">
         <action
             android:id="@+id/action_authenticationFragment_to_nav_home"
-            app:destination="@id/nav_home" />
+            app:destination="@id/nav_home">
+            <argument
+                android:name="name"
+                app:argType="string" />
+        </action>
     </fragment>
     <include app:graph="@navigation/nav_home" />
 </navigation>
