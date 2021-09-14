@@ -9,21 +9,20 @@ import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.Toast
 import androidx.biometric.BiometricManager
 import androidx.biometric.BiometricManager.Authenticators.BIOMETRIC_STRONG
 import androidx.biometric.BiometricManager.Authenticators.DEVICE_CREDENTIAL
 import androidx.biometric.BiometricPrompt
-import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.ViewModelProvider
 import androidx.navigation.fragment.findNavController
+import com.rey.dumbdumb.DumbDumbApp.Companion.TAG
 import com.rey.dumbdumb.databinding.FragmentAuthenticationBinding
 import com.rey.dumbdumb.presentation.viewmodel.AuthenticationViewModel
+import com.rey.lib.cleanarch.domain.usecase.external.ICoroutineProvider
 import dagger.android.support.AndroidSupportInjection
-import java.nio.charset.Charset
-import java.util.*
+import kotlinx.coroutines.asExecutor
 import javax.inject.Inject
 
 class AuthenticationFragment : Fragment() {
@@ -36,6 +35,9 @@ class AuthenticationFragment : Fragment() {
 
     private var _binding: FragmentAuthenticationBinding? = null
     private val binding: FragmentAuthenticationBinding get() = _binding!!
+
+    @Inject
+    lateinit var coroutine: ICoroutineProvider
 
     @Inject
     lateinit var viewModelFactory: ViewModelProvider.Factory
@@ -63,78 +65,101 @@ class AuthenticationFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
+        initObservers()
+        initListeners()
         initBiometric()
         initBiometricPromptInfo()
         initBiometricPrompt()
-        initObservers()
+    }
+
+    override fun onResume() {
+        super.onResume()
+
+        viewModel.getEncryptedCredential()
+    }
+
+    private fun initListeners() = with(binding) {
+        buttonLogin.setOnClickListener {
+            viewModel.authenticate(
+                (inputUsername.editText?.text ?: "").toString(),
+                (inputPassword.editText?.text ?: "").toString()
+            )
+        }
     }
 
     private fun initObservers() = with(viewLifecycleOwner) {
-        viewModel.cipher.observe(this) {
+        viewModel.name.observe(this) {
+            val direction =
+                AuthenticationFragmentDirections.actionAuthenticationFragmentToNavHome(it)
+            findNavController().navigate(direction)
+        }
+
+        viewModel.encryptionCipher.observe(this) {
+            biometricPrompt.authenticate(biometricPromptInfo, BiometricPrompt.CryptoObject(it))
+        }
+
+        viewModel.token.observe(this) {
             try {
-                biometricPrompt.authenticate(biometricPromptInfo, BiometricPrompt.CryptoObject(it))
+                if (it != null)
+                    viewModel.getEncryptionCipher()
+                else
+                    throw IllegalStateException("token is empty")
             } catch (e: Exception) {
                 e.printStackTrace()
+                Log.e(TAG, "initObservers: Failed to authenticate $e")
+            }
+        }
+
+        viewModel.decryptionCipher.observe(this) {
+            biometricPrompt.authenticate(biometricPromptInfo, BiometricPrompt.CryptoObject(it))
+        }
+
+        viewModel.encryptedCredential.observe(this) {
+            with(binding) {
+                val enableForm = it == null
+                inputUsername.isEnabled = enableForm
+                inputPassword.isEnabled = enableForm
+                buttonLogin.isEnabled = enableForm
+            }
+
+            try {
+                if (it != null)
+                    viewModel.getDecryptionCipher(it.initializationVector)
+                else
+                    throw IllegalStateException("credential is empty")
+            } catch (e: Exception) {
+                e.printStackTrace()
+                Log.e(TAG, "initObservers: Failed to decrypt $e")
             }
         }
     }
 
     private fun initBiometricPrompt() {
-        biometricPrompt = BiometricPrompt(
-            this,
-            ContextCompat.getMainExecutor(requireContext()),
-            object : BiometricPrompt.AuthenticationCallback() {
-                override fun onAuthenticationError(errorCode: Int, errString: CharSequence) {
-                    super.onAuthenticationError(errorCode, errString)
-                    Toast.makeText(
-                        requireContext(),
-                        "Authentication error: $errString",
-                        Toast.LENGTH_SHORT
-                    ).show()
-                }
+        val executor = coroutine.default().asExecutor()
+        val callback = object : BiometricPrompt.AuthenticationCallback() {
+            override fun onAuthenticationError(errorCode: Int, errString: CharSequence) {
+                super.onAuthenticationError(errorCode, errString)
+                Log.e(TAG, "onAuthenticationError: $errString")
+            }
 
-                override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) {
-                    super.onAuthenticationSucceeded(result)
-                    Toast.makeText(
-                        requireContext(),
-                        "Authentication succeeded!",
-                        Toast.LENGTH_SHORT
-                    ).show()
-                    val encryptedInfo: ByteArray? =
-                        result.cryptoObject?.cipher?.doFinal("foo".toByteArray(Charset.defaultCharset()))
-                    if (encryptedInfo != null) {
-                        Log.d(
-                            "MY_APP_TAG",
-                            "Encrypted information: " + Arrays.toString(encryptedInfo)
-                        )
-                        Toast.makeText(
-                            requireContext(),
-                            Arrays.toString(encryptedInfo),
-                            Toast.LENGTH_SHORT
-                        ).show()
-                        findNavController().navigate(AuthenticationFragmentDirections.actionAuthenticationFragmentToNavHome())
-                    }
-                }
+            override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) {
+                super.onAuthenticationSucceeded(result)
+                viewModel.authenticate()
+            }
 
-                override fun onAuthenticationFailed() {
-                    super.onAuthenticationFailed()
-                    Toast.makeText(
-                        requireContext(),
-                        "Authentication failed",
-                        Toast.LENGTH_SHORT
-                    ).show()
-                }
-            })
-
-        binding.buttonLogin.setOnClickListener {
-            viewModel.getChiper()
+            override fun onAuthenticationFailed() {
+                super.onAuthenticationFailed()
+                Log.e(TAG, "onAuthenticationFailed: ")
+            }
         }
+
+        biometricPrompt = BiometricPrompt(this, executor, callback)
     }
 
     private fun initBiometricPromptInfo() {
         biometricPromptInfo = BiometricPrompt.PromptInfo.Builder()
             .setTitle("Biometric Login")
-            .setSubtitle("Subtitle")
+            .setSubtitle("Put your finger on the biometric sensor for logging in")
             .setNegativeButtonText("Cancel")
             .setAllowedAuthenticators(bitwiseAuthenticationCombination).build()
     }
@@ -143,13 +168,13 @@ class AuthenticationFragment : Fragment() {
         val biometricManager = BiometricManager.from(requireContext())
         when (biometricManager.canAuthenticate(bitwiseAuthenticationCombination)) {
             BiometricManager.BIOMETRIC_SUCCESS ->
-                Log.d("MY_APP_TAG", "App can authenticate using biometrics.")
+                Log.d(TAG, "App can authenticate using biometrics.")
             BiometricManager.BIOMETRIC_ERROR_NO_HARDWARE ->
-                Log.e("MY_APP_TAG", "No biometric features available on this device.")
+                Log.e(TAG, "No biometric features available on this device.")
             BiometricManager.BIOMETRIC_ERROR_HW_UNAVAILABLE ->
-                Log.e("MY_APP_TAG", "Biometric features are currently unavailable.")
+                Log.e(TAG, "Biometric features are currently unavailable.")
             BiometricManager.BIOMETRIC_ERROR_NONE_ENROLLED -> {
-                Log.e("MY_APP_TAG", "BIOMETRIC_ERROR_NONE_ENROLLED")
+                Log.e(TAG, "BIOMETRIC_ERROR_NONE_ENROLLED")
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
                     // Prompts the user to create credentials that your app accepts.
                     val enrollIntent = Intent(Settings.ACTION_BIOMETRIC_ENROLL).apply {
@@ -162,13 +187,13 @@ class AuthenticationFragment : Fragment() {
                 }
             }
             BiometricManager.BIOMETRIC_ERROR_SECURITY_UPDATE_REQUIRED -> {
-                Log.e("MY_APP_TAG", "BIOMETRIC_ERROR_SECURITY_UPDATE_REQUIRED")
+                Log.e(TAG, "BIOMETRIC_ERROR_SECURITY_UPDATE_REQUIRED")
             }
             BiometricManager.BIOMETRIC_ERROR_UNSUPPORTED -> {
-                Log.e("MY_APP_TAG", "BIOMETRIC_ERROR_UNSUPPORTED")
+                Log.e(TAG, "BIOMETRIC_ERROR_UNSUPPORTED")
             }
             BiometricManager.BIOMETRIC_STATUS_UNKNOWN -> {
-                Log.d("MY_APP_TAG", "BIOMETRIC_STATUS_UNKNOWN")
+                Log.d(TAG, "BIOMETRIC_STATUS_UNKNOWN")
             }
         }
     }
