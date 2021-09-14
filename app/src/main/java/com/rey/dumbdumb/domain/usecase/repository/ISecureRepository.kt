@@ -18,4 +18,5 @@ internal interface ISecureRepository {
     suspend fun decrypt(ciphertext: ByteArray, cipher: Cipher): Result<String>
     suspend fun storeCredential(data: EncryptReq): Result<Unit>
     suspend fun getCredential(): Result<EncryptRes>
+    suspend fun decode(token: String): Result<String>
 }
