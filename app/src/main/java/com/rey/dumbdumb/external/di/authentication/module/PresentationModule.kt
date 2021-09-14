@@ -1,7 +1,7 @@
 package com.rey.dumbdumb.external.di.authentication.module
 
 import androidx.lifecycle.ViewModel
-import com.rey.dumbdumb.domain.entity.usecase.ISecureUseCase
+import com.rey.dumbdumb.domain.entity.usecase.IAuthUseCase
 import com.rey.dumbdumb.external.di.app.annotation.ViewModelKey
 import com.rey.dumbdumb.presentation.viewmodel.AuthenticationViewModel
 import com.rey.lib.cleanarch.domain.usecase.external.ICoroutineProvider
@@ -17,6 +17,6 @@ class PresentationModule {
     @ViewModelKey(AuthenticationViewModel::class)
     fun bindAuthenticationViewModel(
         coroutine: ICoroutineProvider,
-        useCase: ISecureUseCase
+        useCase: IAuthUseCase
     ): ViewModel = AuthenticationViewModel(coroutine, useCase)
 }
