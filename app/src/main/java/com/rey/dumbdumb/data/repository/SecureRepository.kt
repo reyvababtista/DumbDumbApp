@@ -57,6 +57,8 @@ internal class SecureRepository @Inject constructor(
 
     override suspend fun getCredential(): Result<EncryptRes> = secureLocalData.getCredential()
 
+    override suspend fun decode(token: String): Result<String> = secureData.decode(token)
+
     companion object {
         private const val KEY_STORE = "AndroidKeyStore"
     }

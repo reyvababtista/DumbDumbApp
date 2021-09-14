@@ -4,12 +4,15 @@ import com.google.gson.Gson
 import com.rey.dumbdumb.data.repository.source.local.ISecureLocalData
 import com.rey.dumbdumb.domain.dto.EncryptReq
 import com.rey.dumbdumb.domain.dto.EncryptRes
-import com.rey.lib.cleanarch.data.source.local.SharedPrefs
+import com.rey.lib.cleanarch.data.repository.source.local.ISharedPrefs
 import com.rey.lib.cleanarch.domain.dto.Result
 import com.rey.lib.cleanarch.domain.dto.suspendTryCatch
+import javax.inject.Inject
 
-internal class SecureLocalData(private val gson: Gson, private val pref: SharedPrefs) :
-    ISecureLocalData {
+internal class SecureLocalData @Inject constructor(
+    private val gson: Gson,
+    private val pref: ISharedPrefs
+) : ISecureLocalData {
 
     override suspend fun storeCredential(data: EncryptReq): Result<Unit> = suspendTryCatch {
         val encryptedCred = gson.toJson(data)
