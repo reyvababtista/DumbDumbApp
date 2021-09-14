@@ -3,6 +3,8 @@ package com.rey.dumbdumb.data.repository
 import android.os.Build
 import androidx.annotation.RequiresApi
 import com.rey.dumbdumb.data.repository.source.local.ISecureData
+import com.rey.dumbdumb.data.repository.source.local.ISecureLocalData
+import com.rey.dumbdumb.domain.dto.EncryptReq
 import com.rey.dumbdumb.domain.dto.EncryptRes
 import com.rey.dumbdumb.domain.usecase.repository.ISecureRepository
 import com.rey.lib.cleanarch.domain.dto.Result
@@ -14,18 +16,20 @@ import javax.crypto.SecretKey
 import javax.crypto.spec.GCMParameterSpec
 import javax.inject.Inject
 
-internal class SecureRepository @Inject constructor(private val data: ISecureData) :
-    ISecureRepository {
+internal class SecureRepository @Inject constructor(
+    private val secureData: ISecureData,
+    private val secureLocalData: ISecureLocalData
+) : ISecureRepository {
     @RequiresApi(Build.VERSION_CODES.N)
     override suspend fun getSecretKey(alias: String): Result<SecretKey> =
-        data.getSecretKey(KEY_STORE, alias).nextOnError {
-            data.generateSecretKey(KEY_STORE, alias)
-                .next { data.getSecretKey(KEY_STORE, alias) }
+        secureData.getSecretKey(KEY_STORE, alias).nextOnError {
+            secureData.generateSecretKey(KEY_STORE, alias)
+                .next { secureData.getSecretKey(KEY_STORE, alias) }
         }
 
     @RequiresApi(Build.VERSION_CODES.M)
     override suspend fun getEncryptionCipher(secretKey: SecretKey): Result<Cipher> =
-        data.getCipher().next { cipherResult ->
+        secureData.getCipher().next { cipherResult ->
             cipherResult.data.init(Cipher.ENCRYPT_MODE, secretKey)
             cipherResult
         }
@@ -33,7 +37,7 @@ internal class SecureRepository @Inject constructor(private val data: ISecureDat
     override suspend fun getDecryptionCipher(
         secretKey: SecretKey,
         initializationVector: ByteArray
-    ): Result<Cipher> = data.getCipher().next { cipherResult ->
+    ): Result<Cipher> = secureData.getCipher().next { cipherResult ->
         cipherResult.data.init(
             Cipher.DECRYPT_MODE,
             secretKey,
@@ -43,10 +47,15 @@ internal class SecureRepository @Inject constructor(private val data: ISecureDat
     }
 
     override suspend fun encrypt(plaintext: String, cipher: Cipher): Result<EncryptRes> =
-        data.encrypt(plaintext, cipher)
+        secureData.encrypt(plaintext, cipher)
 
     override suspend fun decrypt(ciphertext: ByteArray, cipher: Cipher): Result<String> =
-        data.decrypt(ciphertext, cipher)
+        secureData.decrypt(ciphertext, cipher)
+
+    override suspend fun storeCredential(data: EncryptReq): Result<Unit> =
+        secureLocalData.storeCredential(data)
+
+    override suspend fun getCredential(): Result<EncryptRes> = secureLocalData.getCredential()
 
     companion object {
         private const val KEY_STORE = "AndroidKeyStore"
