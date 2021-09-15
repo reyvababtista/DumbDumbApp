@@ -29,7 +29,7 @@ internal class AuthenticationViewModel @Inject constructor(
             .onSuccess { _token.postValue(it) }
             .onError {
                 _token.postValue(null)
-                Log.e(TAG, "authenticate: $it")
+                Log.e(TAG, "authenticate(username: String, password: String): $it")
             }
     }
 
@@ -39,7 +39,7 @@ internal class AuthenticationViewModel @Inject constructor(
     fun getEncryptionCipher() = viewModelScope.launch(coroutine.default()) {
         useCase.getEncryptionCipher()
             .onSuccess { _encryptionCipher.postValue(it) }
-            .onError { Log.e(TAG, "getChiper: $it") }
+            .onError { Log.e(TAG, "getEncryptionCipher(): $it") }
     }
 
     private val _encryptedCredential = MutableLiveData<EncryptRes?>()
@@ -50,7 +50,7 @@ internal class AuthenticationViewModel @Inject constructor(
             .onSuccess { _encryptedCredential.postValue(it) }
             .onError {
                 _encryptedCredential.postValue(null)
-                Log.e(TAG, "getEncryptedCredential: $it")
+                Log.e(TAG, "getEncryptedCredential(): $it")
             }
     }
 
@@ -61,7 +61,7 @@ internal class AuthenticationViewModel @Inject constructor(
         viewModelScope.launch(coroutine.default()) {
             useCase.getDecryptionCipher(initializationVector)
                 .onSuccess { _decryptionCipher.postValue(it) }
-                .onError { Log.e(TAG, "getChiper: $it") }
+                .onError { Log.e(TAG, "getDecryptionCipher(initializationVector: ByteArray): $it") }
         }
 
     private val _name = MutableLiveData<String>()
@@ -77,6 +77,6 @@ internal class AuthenticationViewModel @Inject constructor(
             }
         )
             .onSuccess { _name.postValue(it) }
-            .onError { Log.e(TAG, "authenticate: $it") }
+            .onError { Log.e(TAG, "authenticate(): $it") }
     }
 }
