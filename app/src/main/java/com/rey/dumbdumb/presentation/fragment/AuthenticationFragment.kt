@@ -157,11 +157,15 @@ class AuthenticationFragment : Fragment() {
     }
 
     private fun initBiometricPromptInfo() {
-        biometricPromptInfo = BiometricPrompt.PromptInfo.Builder()
+        val builder = BiometricPrompt.PromptInfo.Builder()
             .setTitle("Biometric Login")
             .setSubtitle("Put your finger on the biometric sensor for logging in")
-            .setNegativeButtonText("Cancel")
-            .setAllowedAuthenticators(bitwiseAuthenticationCombination).build()
+            .setAllowedAuthenticators(bitwiseAuthenticationCombination)
+
+        if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.Q)
+            builder.setNegativeButtonText("Cancel")
+
+        biometricPromptInfo = builder.build()
     }
 
     private fun initBiometric() {
